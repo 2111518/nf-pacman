@@ -6,7 +6,7 @@ from vector import Vector2
 
 
 class Pellet:
-    def __init__(self, row, column):
+    def __init__(self, row, column) -> None:
         self.name = PELLET
         self.position = Vector2(column*TILEWIDTH, row*TILEHEIGHT)
         self.color = WHITE
@@ -15,7 +15,7 @@ class Pellet:
         self.points = 10
         self.visible = True
 
-    def render(self, screen):
+    def render(self, screen) -> None:
         if self.visible:
             adjust = Vector2(TILEWIDTH, TILEHEIGHT) / 2
             p = self.position + adjust
@@ -23,7 +23,7 @@ class Pellet:
 
 
 class PowerPellet(Pellet):
-    def __init__(self, row, column):
+    def __init__(self, row, column) -> None:
         Pellet.__init__(self, row, column)
         self.name = POWERPELLET
         self.radius = int(8 * TILEWIDTH / 16)
@@ -31,7 +31,7 @@ class PowerPellet(Pellet):
         self.flashTime = 0.2
         self.timer= 0
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         self.timer += dt
         if self.timer >= self.flashTime:
             self.visible = not self.visible
@@ -39,17 +39,17 @@ class PowerPellet(Pellet):
 
 
 class PelletGroup:
-    def __init__(self, pelletfile):
+    def __init__(self, pelletfile) -> None:
         self.pelletList = []
         self.powerpellets = []
         self.createPelletList(pelletfile)
         self.numEaten = 0
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         for powerpellet in self.powerpellets:
             powerpellet.update(dt)
 
-    def createPelletList(self, pelletfile):
+    def createPelletList(self, pelletfile) -> None:
         data = self.readPelletfile(pelletfile)
         for row in range(data.shape[0]):
             for col in range(data.shape[1]):
@@ -63,11 +63,9 @@ class PelletGroup:
     def readPelletfile(self, textfile):
         return np.loadtxt(textfile, dtype="<U1")
 
-    def isEmpty(self):
-        if len(self.pelletList) == 0:
-            return True
-        return False
+    def isEmpty(self) -> bool:
+        return len(self.pelletList) == 0
 
-    def render(self, screen):
+    def render(self, screen) -> None:
         for pellet in self.pelletList:
             pellet.render(screen)

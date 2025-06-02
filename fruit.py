@@ -4,7 +4,7 @@ from sprites import FruitSprites
 
 
 class Fruit(Entity):
-    def __init__(self, node, level=0):
+    def __init__(self, node, level=0) -> None:
         Entity.__init__(self, node)
         self.name = FRUIT
         self.color = GREEN
@@ -15,7 +15,7 @@ class Fruit(Entity):
         self.setBetweenNodes(RIGHT)
         self.sprites = FruitSprites(self, level)
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         self.timer += dt
         if self.timer >= self.lifespan:
             self.destroy = True

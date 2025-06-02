@@ -8,7 +8,7 @@ from vector import Vector2
 
 
 class Ghost(Entity):
-    def __init__(self, node, pacman=None, blinky=None):
+    def __init__(self, node, pacman=None, blinky=None) -> None:
         Entity.__init__(self, node)
         self.name = GHOST
         self.points = 200
@@ -19,12 +19,12 @@ class Ghost(Entity):
         self.blinky = blinky
         self.homeNode = node
 
-    def reset(self):
+    def reset(self) -> None:
         Entity.reset(self)
         self.points = 200
         self.directionMethod = self.goalDirection
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         self.sprites.update(dt)
         self.mode.update(dt)
         if self.mode.current is SCATTER:
@@ -33,32 +33,32 @@ class Ghost(Entity):
             self.chase()
         Entity.update(self, dt)
 
-    def scatter(self):
+    def scatter(self) -> None:
         self.goal = Vector2()
 
-    def chase(self):
+    def chase(self) -> None:
         self.goal = self.pacman.position
 
-    def spawn(self):
+    def spawn(self) -> None:
         self.goal = self.spawnNode.position
 
-    def setSpawnNode(self, node):
+    def setSpawnNode(self, node) -> None:
         self.spawnNode = node
 
-    def startSpawn(self):
+    def startSpawn(self) -> None:
         self.mode.setSpawnMode()
         if self.mode.current == SPAWN:
             self.setSpeed(150)
             self.directionMethod = self.goalDirection
             self.spawn()
 
-    def startFreight(self):
+    def startFreight(self) -> None:
         self.mode.setFreightMode()
         if self.mode.current == FREIGHT:
             self.setSpeed(50)
             self.directionMethod = self.randomDirection
 
-    def normalMode(self):
+    def normalMode(self) -> None:
         self.setSpeed(100)
         self.directionMethod = self.goalDirection
         self.homeNode.denyAccess(DOWN, self)
@@ -67,7 +67,7 @@ class Ghost(Entity):
 
 
 class Blinky(Ghost):
-    def __init__(self, node, pacman=None, blinky=None):
+    def __init__(self, node, pacman=None, blinky=None) -> None:
         Ghost.__init__(self, node, pacman, blinky)
         self.name = BLINKY
         self.color = RED
@@ -75,46 +75,46 @@ class Blinky(Ghost):
 
 
 class Pinky(Ghost):
-    def __init__(self, node, pacman=None, blinky=None):
+    def __init__(self, node, pacman=None, blinky=None) -> None:
         Ghost.__init__(self, node, pacman, blinky)
         self.name = PINKY
         self.color = PINK
         self.sprites = GhostSprites(self)
 
-    def scatter(self):
+    def scatter(self) -> None:
         self.goal = Vector2(TILEWIDTH*NCOLS, 0)
 
-    def chase(self):
+    def chase(self) -> None:
         self.goal = self.pacman.position + self.pacman.directions[self.pacman.direction] * TILEWIDTH * 4
 
 
 class Inky(Ghost):
-    def __init__(self, node, pacman=None, blinky=None):
+    def __init__(self, node, pacman=None, blinky=None) -> None:
         Ghost.__init__(self, node, pacman, blinky)
         self.name = INKY
         self.color = TEAL
         self.sprites = GhostSprites(self)
 
-    def scatter(self):
+    def scatter(self) -> None:
         self.goal = Vector2(TILEWIDTH*NCOLS, TILEHEIGHT*NROWS)
 
-    def chase(self):
+    def chase(self) -> None:
         vec1 = self.pacman.position + self.pacman.directions[self.pacman.direction] * TILEWIDTH * 2
         vec2 = (vec1 - self.blinky.position) * 2
         self.goal = self.blinky.position + vec2
 
 
 class Clyde(Ghost):
-    def __init__(self, node, pacman=None, blinky=None):
+    def __init__(self, node, pacman=None, blinky=None) -> None:
         Ghost.__init__(self, node, pacman, blinky)
         self.name = CLYDE
         self.color = ORANGE
         self.sprites = GhostSprites(self)
 
-    def scatter(self):
+    def scatter(self) -> None:
         self.goal = Vector2(0, TILEHEIGHT*NROWS)
 
-    def chase(self):
+    def chase(self) -> None:
         d = self.pacman.position - self.position
         ds = d.magnitudeSquared()
         if ds <= (TILEWIDTH * 8)**2:
@@ -124,7 +124,7 @@ class Clyde(Ghost):
 
 
 class GhostGroup:
-    def __init__(self, node, pacman):
+    def __init__(self, node, pacman) -> None:
         self.blinky = Blinky(node, pacman)
         self.pinky = Pinky(node, pacman)
         self.inky = Inky(node, pacman, self.blinky)
@@ -134,40 +134,40 @@ class GhostGroup:
     def __iter__(self):
         return iter(self.ghosts)
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         for ghost in self:
             ghost.update(dt)
 
-    def startFreight(self):
+    def startFreight(self) -> None:
         for ghost in self:
             ghost.startFreight()
         self.resetPoints()
 
-    def setSpawnNode(self, node):
+    def setSpawnNode(self, node) -> None:
         for ghost in self:
             ghost.setSpawnNode(node)
 
-    def updatePoints(self):
+    def updatePoints(self) -> None:
         for ghost in self:
             ghost.points *= 2
 
-    def resetPoints(self):
+    def resetPoints(self) -> None:
         for ghost in self:
             ghost.points = 200
 
-    def hide(self):
+    def hide(self) -> None:
         for ghost in self:
             ghost.visible = False
 
-    def show(self):
+    def show(self) -> None:
         for ghost in self:
             ghost.visible = True
 
-    def reset(self):
+    def reset(self) -> None:
         for ghost in self:
             ghost.reset()
 
-    def render(self, screen):
+    def render(self, screen) -> None:
         for ghost in self:
             ghost.render(screen)
 

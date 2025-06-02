@@ -1,5 +1,5 @@
 class Pause:
-    def __init__(self, paused=False):
+    def __init__(self, paused=False) -> None:
         self.paused = paused
         self.timer = 0
         self.pauseTime = None
@@ -15,11 +15,11 @@ class Pause:
                 return self.func
         return None
 
-    def setPause(self, playerPaused=False, pauseTime=None, func=None):
+    def setPause(self, playerPaused=False, pauseTime=None, func=None) -> None:
         self.timer = 0
         self.func = func
         self.pauseTime = pauseTime
         self.flip()
 
-    def flip(self):
+    def flip(self) -> None:
         self.paused = not self.paused

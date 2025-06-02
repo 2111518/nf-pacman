@@ -2,7 +2,7 @@ import math
 
 
 class Vector2:
-    def __init__(self, x=0, y=0):
+    def __init__(self, x=0, y=0) -> None:
         self.x = x
         self.y = y
         self.thresh = 0.000001
@@ -48,5 +48,5 @@ class Vector2:
     def asInt(self):
         return int(self.x), int(self.y)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<"+str(self.x)+", "+str(self.y)+">"

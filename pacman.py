@@ -7,7 +7,7 @@ from sprites import PacmanSprites
 
 
 class Pacman(Entity):
-    def __init__(self, node):
+    def __init__(self, node) -> None:
         Entity.__init__(self, node )
         self.name = PACMAN
         self.color = YELLOW
@@ -16,7 +16,7 @@ class Pacman(Entity):
         self.alive = True
         self.sprites = PacmanSprites(self)
 
-    def reset(self):
+    def reset(self) -> None:
         Entity.reset(self)
         self.direction = LEFT
         self.setBetweenNodes(LEFT)
@@ -24,11 +24,11 @@ class Pacman(Entity):
         self.image = self.sprites.getStartImage()
         self.sprites.reset()
 
-    def die(self):
+    def die(self) -> None:
         self.alive = False
         self.direction = STOP
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         self.sprites.update(dt)
         self.position += self.directions[self.direction]*self.speed*dt
         direction = self.getValidKey()
@@ -69,10 +69,8 @@ class Pacman(Entity):
     def collideGhost(self, ghost):
         return self.collideCheck(ghost)
 
-    def collideCheck(self, other):
+    def collideCheck(self, other) -> bool:
         d = self.position - other.position
         dSquared = d.magnitudeSquared()
         rSquared = (self.collideRadius + other.collideRadius)**2
-        if dSquared <= rSquared:
-            return True
-        return False
+        return dSquared <= rSquared

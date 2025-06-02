@@ -2,7 +2,9 @@ from constants import *
 
 
 class Animator:
-    def __init__(self, frames=[], speed=20, loop=True):
+    def __init__(self, frames=None, speed=20, loop=True) -> None:
+        if frames is None:
+            frames = []
         self.frames = frames
         self.current_frame = 0
         self.speed = speed
@@ -10,7 +12,7 @@ class Animator:
         self.dt = 0
         self.finished = False
 
-    def reset(self):
+    def reset(self) -> None:
         self.current_frame = 0
         self.finished = False
 
@@ -26,7 +28,7 @@ class Animator:
 
         return self.frames[self.current_frame]
 
-    def nextFrame(self, dt):
+    def nextFrame(self, dt) -> None:
         self.dt += dt
         if self.dt >= (1.0 / self.speed):
             self.current_frame += 1

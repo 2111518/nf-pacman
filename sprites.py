@@ -9,7 +9,7 @@ BASETILEHEIGHT = 16
 DEATH = 5
 
 class Spritesheet:
-    def __init__(self):
+    def __init__(self) -> None:
         self.sheet = pygame.image.load("spritesheet_mspacman.png").convert()
         transcolor = self.sheet.get_at((0,0))
         self.sheet.set_colorkey(transcolor)
@@ -25,7 +25,7 @@ class Spritesheet:
 
 
 class PacmanSprites(Spritesheet):
-    def __init__(self, entity):
+    def __init__(self, entity) -> None:
         Spritesheet.__init__(self)
         self.entity = entity
         self.entity.image = self.getStartImage()
@@ -33,15 +33,15 @@ class PacmanSprites(Spritesheet):
         self.defineAnimations()
         self.stopimage = (8, 0)
 
-    def defineAnimations(self):
+    def defineAnimations(self) -> None:
         self.animations[LEFT] = Animator(((8,0), (0, 0), (0, 2), (0, 0)))
         self.animations[RIGHT] = Animator(((10,0), (2, 0), (2, 2), (2, 0)))
         self.animations[UP] = Animator(((10,2), (6, 0), (6, 2), (6, 0)))
         self.animations[DOWN] = Animator(((8,2), (4, 0), (4, 2), (4, 0)))
         self.animations[DEATH] = Animator(((0, 12), (2, 12), (4, 12), (6, 12), (8, 12), (10, 12), (12, 12), (14, 12), (16, 12), (18, 12), (20, 12)), speed=6, loop=False)
 
-    def update(self, dt):
-        if self.entity.alive == True:
+    def update(self, dt) -> None:
+        if self.entity.alive:
             if self.entity.direction == LEFT:
                 self.entity.image = self.getImage(*self.animations[LEFT].update(dt))
                 self.stopimage = (8, 0)
@@ -59,7 +59,7 @@ class PacmanSprites(Spritesheet):
         else:
             self.entity.image = self.getImage(*self.animations[DEATH].update(dt))
 
-    def reset(self):
+    def reset(self) -> None:
         for key in list(self.animations.keys()):
             self.animations[key].reset()
 
@@ -71,13 +71,13 @@ class PacmanSprites(Spritesheet):
 
 
 class GhostSprites(Spritesheet):
-    def __init__(self, entity):
+    def __init__(self, entity) -> None:
         Spritesheet.__init__(self)
         self.x = {BLINKY:0, PINKY:2, INKY:4, CLYDE:6}
         self.entity = entity
         self.entity.image = self.getStartImage()
 
-    def update(self, dt):
+    def update(self, dt) -> None:
         x = self.x[self.entity.name]
         if self.entity.mode.current in [SCATTER, CHASE]:
             if self.entity.direction == LEFT:
@@ -108,7 +108,7 @@ class GhostSprites(Spritesheet):
 
 
 class FruitSprites(Spritesheet):
-    def __init__(self, entity, level):
+    def __init__(self, entity, level) -> None:
         Spritesheet.__init__(self)
         self.entity = entity
         self.fruits = {0:(16,8), 1:(18,8), 2:(20,8), 3:(16,10), 4:(18,10), 5:(20,10)}
@@ -122,17 +122,17 @@ class FruitSprites(Spritesheet):
 
 
 class LifeSprites(Spritesheet):
-    def __init__(self, numlives):
+    def __init__(self, numlives) -> None:
         Spritesheet.__init__(self)
         self.resetLives(numlives)
 
-    def removeImage(self):
+    def removeImage(self) -> None:
         if len(self.images) > 0:
             self.images.pop(0)
 
-    def resetLives(self, numlives):
+    def resetLives(self, numlives) -> None:
         self.images = []
-        for i in range(numlives):
+        for _i in range(numlives):
             self.images.append(self.getImage(0,0))
 
     def getImage(self, x, y):
@@ -140,7 +140,7 @@ class LifeSprites(Spritesheet):
 
 
 class MazeSprites(Spritesheet):
-    def __init__(self, mazefile, rotfile):
+    def __init__(self, mazefile, rotfile) -> None:
         Spritesheet.__init__(self)
         self.data = self.readMazeFile(mazefile)
         self.rotdata = self.readMazeFile(rotfile)
