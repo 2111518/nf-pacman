@@ -223,7 +223,7 @@ class GameController:
         self.textgroup.updateLevel(self.level)
 
     def restartGame(self) -> None:
-        self.lives = 6
+        self.lives = 5
         self.level = 0
         self.pause.paused = True
         self.fruit = None
