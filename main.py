@@ -152,14 +152,57 @@ class GameController:
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
         if pellet:
             self.pellets.numEaten += 1
-            self.updateScore(pellet.points)
+            self.updateScore(pellet.points) 
+            
+            if pellet.name == TELEPORTPELLET:
+                self.pacman.teleport(self.nodes)
+            elif pellet.name == POWERPELLET:
+                self.ghosts.startFreight()
+            elif pellet.name == INVISIBILITYPELLET:
+                invisibility_duration = 5.0 
+                self.pacman.activate_invisibility(invisibility_duration)
+            elif pellet.name == SPEEDBOOSTPELLET:
+                boost_factor = 1.5  
+                boost_duration = 8.0  
+                self.pacman.activate_speed_boost(boost_factor, boost_duration)
+            elif pellet.name == SCOREMAGNETPELLET:
+                magnet_radius_squared = (TILEWIDTH * 4)**2 # Radius of 4 tiles
+                pellets_absorbed_in_event = 0
+                
+                # Iterate over a copy of the pellet list for safe removal
+                for other_pellet in list(self.pellets.pelletList):
+                    if other_pellet is pellet: # Don't absorb the magnet pellet itself (it's handled by the main removal)
+                        continue
+
+                    # Absorb only normal pellets and power pellets
+                    if other_pellet.name == PELLET or other_pellet.name == POWERPELLET:
+                        if other_pellet.visible: # Check if it's an active pellet
+                            dist_sq = (self.pacman.position - other_pellet.position).magnitudeSquared()
+                            if dist_sq <= magnet_radius_squared:
+                                self.updateScore(other_pellet.points)
+                                self.pellets.numEaten += 1 # Increment for game progression logic
+                                pellets_absorbed_in_event +=1
+                                
+                                self.pellets.pelletList.remove(other_pellet)
+                                if other_pellet.name == POWERPELLET and other_pellet in self.pellets.powerpellets:
+                                    self.pellets.powerpellets.remove(other_pellet)
+                
+                # if pellets_absorbed_in_event > 0:
+                #     print(f"ScoreMagnet absorbed {pellets_absorbed_in_event} pellets.")
+
+            # Standard game logic dependent on numEaten (e.g., releasing ghosts)
+            # This will now correctly account for pellets eaten by the magnet
             if self.pellets.numEaten == 30:
                 self.ghosts.inky.startNode.allowAccess(RIGHT, self.ghosts.inky)
             if self.pellets.numEaten == 70:
                 self.ghosts.clyde.startNode.allowAccess(LEFT, self.ghosts.clyde)
-            self.pellets.pelletList.remove(pellet)
-            if pellet.name == POWERPELLET:
-                self.ghosts.startFreight()
+            
+            # Remove the originally eaten pellet (teleport, power, invisibility, speed, or magnet itself)
+            if pellet in self.pellets.pelletList: # It might have been absorbed if it was another magnet (unlikely setup)
+                self.pellets.pelletList.remove(pellet)
+            if pellet.name == POWERPELLET and pellet in self.pellets.powerpellets:
+                 self.pellets.powerpellets.remove(pellet) # Ensure the main power pellet is removed if it was one
+            
             if self.pellets.isEmpty():
                 self.flashBG = True
                 self.hideEntities()

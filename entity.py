@@ -46,14 +46,28 @@ class Entity:
             self.setPosition()
 
     def validDirection(self, direction) -> bool:
-        if direction is not STOP and self.name in self.node.access[direction]:
-            if self.node.neighbors[direction] is not None:
-                return True
+        #print(f"Entity.validDirection for {self.name} at Node {self.node.position if self.node else 'None'} with Dir: {direction}") # DEBUG LINE
+        if direction is not STOP:
+            if self.node is None:
+                #print(f"  validDirection REJECT: self.node is None") # DEBUG LINE
+                return False
+            if self.name not in self.node.access[direction]:
+                #print(f"  validDirection REJECT: {self.name} not in Node access[{direction}] = {self.node.access[direction]}") # DEBUG LINE
+                return False
+            if self.node.neighbors[direction] is None:
+                #print(f"  validDirection REJECT: Node neighbors[{direction}] is None") # DEBUG LINE
+                return False
+            #print(f"  validDirection ACCEPT: Node access and neighbor OK.") # DEBUG LINE
+            return True
+        #print(f"  validDirection REJECT: Direction is STOP") # DEBUG LINE
         return False
 
     def getNewTarget(self, direction):
+        #print(f"Entity.getNewTarget for {self.name} at Node {self.node.position if self.node else 'None'} with input Dir: {direction}") # DEBUG LINE
         if self.validDirection(direction):
+            #print(f"  getNewTarget SUCCESS: Returning neighbor {self.node.neighbors[direction].position if self.node and self.node.neighbors[direction] else 'Error getting neighbor'}") # DEBUG LINE
             return self.node.neighbors[direction]
+        #print(f"  getNewTarget FAIL: validDirection was False. Returning current node {self.node.position if self.node else 'None'}") # DEBUG LINE
         return self.node
 
     def overshotTarget(self):
