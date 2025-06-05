@@ -39,7 +39,7 @@ class GameController:
         self.selected_character = self.character_select()
 
     def character_select(self) -> int:
-        """顯示角色選擇畫面，回傳選擇的角色編號。."""
+        """顯示角色選擇畫面，回傳選擇的角色編號"""
         font_en = pygame.font.Font("PressStart2P-Regular.ttf", 16)  # 英文名稱字型（小一點）
         #font_zh = pygame.font.SysFont("Microsoft JhengHei", 20)  # 中文描述字型
         options = [
