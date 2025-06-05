@@ -13,11 +13,13 @@ from pauser import Pause
 from pellets import PelletGroup
 from sprites import LifeSprites, MazeSprites
 from text import TextGroup
+from sound import SoundController
 
 
 class GameController:
     def __init__(self) -> None:
         pygame.init()
+        pygame.mixer.init()
         self.screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
         self.background = None
         self.background_norm = None
@@ -36,7 +38,11 @@ class GameController:
         self.fruitCaptured = []
         self.fruitNode = None
         self.mazedata = MazeData()
+        self.sound_controller = SoundController()
         self.selected_character = self.character_select()
+        self.extra_life_score_threshold: int = 10000
+        self.extra_life_awarded: bool = False
+        self.default_background_music: str = "pacman_beginning" # 設定預設背景音樂
 
     def character_select(self) -> int:
         """顯示角色選擇畫面，回傳選擇的角色編號"""
@@ -96,6 +102,9 @@ class GameController:
         self.background = self.background_norm
 
     def startGame(self) -> None:
+        self.sound_controller.play_sound("game_start") # 播放遊戲開始音效 (一次性)
+        # 停止任何可能正在播放的背景音樂，讓 manage_background_sounds 來決定新的背景音
+        self.sound_controller.stop_music()
         self.mazedata.loadMaze(self.level)
         self.mazesprites = MazeSprites(self.mazedata.obj.name+".txt", self.mazedata.obj.name+"_rotation.txt")
         self.setBackground()
@@ -172,6 +181,8 @@ class GameController:
         else:
             self.pacman.update(dt)
 
+        self.manage_background_sounds() # 管理背景音效
+
         if self.flashBG:
             self.flashTimer += dt
             if self.flashTimer >= self.flashTime:
@@ -214,10 +225,13 @@ class GameController:
             self.pellets.numEaten += 1
             self.updateScore(pellet.points)
 
-            if pellet.name == TELEPORTPELLET:
+            if pellet.name == PELLET: # 普通豆子
+                self.sound_controller.play_sound("munch_1") # 播放咀嚼音效
+            elif pellet.name == TELEPORTPELLET:
                 self.pacman.teleport(self.nodes)
             elif pellet.name == POWERPELLET:
                 self.ghosts.startFreight()
+                self.sound_controller.play_sound("power_pellet") # 播放吃到大力丸音效
             elif pellet.name == INVISIBILITYPELLET:
                 invisibility_duration = 5.0
                 self.pacman.activate_invisibility(invisibility_duration)
@@ -276,6 +290,7 @@ class GameController:
             if hasattr(self.pacman, "ability") and hasattr(self.pacman.ability, "bullets"):
                 for bullet in self.pacman.ability.bullets:
                     if ghost.visible and bullet.rect.colliderect(ghost.image.get_rect(center=ghost.position.asInt())) and ghost.mode.current is not SPAWN:
+                        self.sound_controller.play_sound("eat_ghost") # 假設子彈擊中鬼效果類似吃鬼
                         ghost.startFreight()  # 先進入可吃狀態
                         ghost.visible = False
                         self.updateScore(ghost.points)
@@ -297,6 +312,7 @@ class GameController:
             # 一般Pacman碰撞（包含PacmanShield未開技能時）
             if self.pacman.collideGhost(ghost):
                 if ghost.mode.current is FREIGHT:
+                    self.sound_controller.play_sound("eat_ghost") # 播放吃到鬼音效
                     self.pacman.visible = False
                     ghost.visible = False
                     self.updateScore(ghost.points)
@@ -309,12 +325,16 @@ class GameController:
                     if self.pacman.alive:
                         self.lives -=  1
                         self.lifesprites.removeImage()
-                        self.pacman.die()
+                        self.pacman.die() # pacman.die() 內部可能有動畫計時器
+                        self.sound_controller.stop_music() # Pacman 死亡，停止所有背景音樂
+                        self.sound_controller.play_sound("pacman_death") # 播放 Pacman 死亡音效 (一次性)
                         self.ghosts.hide()
                         if self.lives <= 0:
                             self.textgroup.showText(GAMEOVERTXT)
+                            # 遊戲結束，準備重新開始，此時應已停止背景音樂
                             self.pause.setPause(pauseTime=3, func=self.restartGame)
                         else:
+                            # 僅重置關卡，死亡音樂播放後，manage_background_sounds 會在下一幀處理警笛
                             self.pause.setPause(pauseTime=3, func=self.resetLevel)
 
     def checkFruitEvents(self) -> None:
@@ -322,6 +342,7 @@ class GameController:
             self.fruit = Fruit(self.nodes.getNodeFromTiles(9, 20), self.level)
         if self.fruit is not None:
             if self.pacman.collideCheck(self.fruit):
+                self.sound_controller.play_sound("eat_fruit") # 播放吃到水果音效
                 self.updateScore(self.fruit.points)
                 self.textgroup.addText(str(self.fruit.points), WHITE, self.fruit.position.x, self.fruit.position.y, 8, time=1)
                 fruitCaptured = False
@@ -344,6 +365,8 @@ class GameController:
         self.ghosts.hide()
 
     def nextLevel(self) -> None:
+        self.sound_controller.play_sound("intermission") # 播放過關音效 (一次性)
+        self.sound_controller.stop_music() # 停止舊的背景音樂，讓 manage_background_sounds 在下一關開始時選擇新的
         self.showEntities()
         self.level += 1
         self.pause.paused = True
@@ -351,10 +374,12 @@ class GameController:
         self.textgroup.updateLevel(self.level)
 
     def restartGame(self) -> None:
+        # game_start 音效會在 startGame() 中播放
         self.lives = 5
         self.level = 0
         self.pause.paused = True
         self.fruit = None
+        self.sound_controller.stop_music() # 停止任何音樂，startGame 會處理開始音樂和後續的背景音
         self.startGame()
         self.score = 0
         self.textgroup.updateScore(self.score)
@@ -362,6 +387,7 @@ class GameController:
         self.textgroup.showText(READYTXT)
         self.lifesprites.resetLives(self.lives)
         self.fruitCaptured = []
+        self.extra_life_awarded = False # 重置額外生命旗標
 
     def resetLevel(self) -> None:
         self.pause.paused = True
@@ -369,10 +395,20 @@ class GameController:
         self.ghosts.reset()
         self.fruit = None
         self.textgroup.showText(READYTXT)
+        # Pacman 重生，背景音樂（警笛）應恢復，manage_background_sounds() 會處理
+        # 如果之前有 stop_music(), 這裡不需要特別再 stop/start，交給 update 中的 manage_background_sounds
 
     def updateScore(self, points) -> None:
         self.score += points
         self.textgroup.updateScore(self.score)
+        # 檢查是否達到獲得額外生命的分數門檻
+        if not self.extra_life_awarded and self.score >= self.extra_life_score_threshold:
+            self.lives += 1
+            self.lifesprites.addImage() # 假設 LifeSprites 有此方法來增加一個生命圖示
+            self.sound_controller.play_sound("extend") # 播放獲得額外生命音效
+            self.extra_life_awarded = True
+            # 如果希望在更高分數再次獎勵生命，可以擴展此邏輯
+            # 例如： self.extra_life_score_threshold += 10000 或設定多個門檻
 
     def render(self) -> None:
         self.screen.blit(self.background, (0, 0))
@@ -399,6 +435,26 @@ class GameController:
             self.pacman.ability.render(self.screen)
 
         pygame.display.update()
+
+    def manage_background_sounds(self) -> None:
+        """Manages playing continuous background sounds like retreating sounds or default background music."""
+        if not self.pacman.alive or self.pause.paused:
+            # 如果Pacman死亡、遊戲暫停，或者在某些特殊過場（如果有的話），則可能停止背景音
+            # 但Pacman死亡時，死亡音效播放後，若遊戲未結束（resetLevel），則背景音樂應恢復
+            # GAMEOVERTXT 顯示時，背景音應該是停止的，直到 restartGame
+            if not self.pacman.alive and self.lives > 0: # Pacman 死亡但遊戲未結束 (等待resetLevel)
+                 pass # 背景音樂已在 die() 事件中停止，等待 resetLevel 後恢復
+            elif self.textgroup.alltext[GAMEOVERTXT].visible:
+                 self.sound_controller.stop_music()
+            # elif self.pause.paused and not self.textgroup.alltext[PAUSETXT].visible: # 遊戲內部邏輯暫停（如過關）
+                 # self.sound_controller.stop_music() # 可能需要，取決於是否希望過關音效後立即停止所有聲音
+            return
+
+        if self.ghosts.is_any_ghost_frightened():
+            self.sound_controller.play_background_music("retreating", loops=-1)
+        else:
+            # 播放預設的背景音樂
+            self.sound_controller.play_background_music(self.default_background_music, loops=-1)
 
 
 if __name__ == "__main__":

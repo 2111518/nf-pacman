@@ -134,6 +134,13 @@ class GhostGroup:
     def __iter__(self):
         return iter(self.ghosts)
 
+    def is_any_ghost_frightened(self) -> bool:
+        """Checks if any ghost in the group is currently in FREIGHT mode."""
+        for ghost in self.ghosts:
+            if ghost.mode.current == FREIGHT:
+                return True
+        return False
+
     def update(self, dt) -> None:
         for ghost in self:
             ghost.update(dt)
