@@ -130,6 +130,12 @@ class LifeSprites(Spritesheet):
         if len(self.images) > 0:
             self.images.pop(0)
 
+    def addImage(self) -> None:
+        """Adds a life image to the list of life sprites."""
+        # Assuming getImage(0,0) is the correct sprite for a single life,
+        # similar to how it's used in resetLives.
+        self.images.append(self.getImage(0,0))
+
     def resetLives(self, numlives) -> None:
         self.images = []
         for _i in range(numlives):
