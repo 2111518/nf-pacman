@@ -59,7 +59,9 @@ class TextGroup:
         self.alltext.pop(id)
 
     def setupText(self) -> None:
-        size = TILEHEIGHT
+        size = TILEHEIGHT # Default size for SCORE, LEVEL etc.
+        small_size = TILEHEIGHT // 2 # Smaller size for HI-SCORE, or a fixed value like 10
+
         self.alltext[SCORETXT] = Text("0".zfill(8), WHITE, 0, TILEHEIGHT, size)
         self.alltext[LEVELTXT] = Text(str(1).zfill(3), WHITE, 23*TILEWIDTH, TILEHEIGHT, size)
         self.alltext[READYTXT] = Text("READY!", YELLOW, 11.25*TILEWIDTH, 20*TILEHEIGHT, size, visible=False)
@@ -67,6 +69,22 @@ class TextGroup:
         self.alltext[GAMEOVERTXT] = Text("GAMEOVER!", YELLOW, 10*TILEWIDTH, 20*TILEHEIGHT, size, visible=False)
         self.addText("SCORE", WHITE, 0, 0, size)
         self.addText("LEVEL", WHITE, 23*TILEWIDTH, 0, size)
+
+        # 移除舊的 HI-SCORE 顯示 (如果之前有)
+        if HISCORELABELTXT in self.alltext:
+            self.removeText(HISCORELABELTXT)
+        if HISCOREVALUETXT in self.alltext:
+            self.removeText(HISCOREVALUETXT)
+
+        # 新增最高分顯示在底部中間，字型較小
+        # 為了更好地居中，我們可能需要先渲染一次文字以獲取寬度，或者估算一個 X 位置
+        # 估算 HI-SCORE 標籤的 X 位置使其大致居中
+        # "HI-SCORE" 大約 8 個字元，小字型時寬度可能在 8 * small_size 左右
+        hiscore_label_x = (SCREENWIDTH // 2) - (8 * small_size // 2) # 估算X使其居中
+        hiscore_value_x = (SCREENWIDTH // 2) - (8 * small_size // 2) # 最高分值也大致居中
+
+        self.alltext[HISCORELABELTXT] = Text("HI-SCORE", WHITE, hiscore_label_x, SCREENHEIGHT - (2 * small_size) - 10, small_size, id=HISCORELABELTXT) # HI-SCORE 標籤
+        self.alltext[HISCOREVALUETXT] = Text("0".zfill(8), WHITE, hiscore_value_x, SCREENHEIGHT - small_size - 5, small_size) # HI-SCORE 值 (在標籤下方)
 
     def update(self, dt) -> None:
         for tkey in list(self.alltext.keys()):
@@ -88,6 +106,10 @@ class TextGroup:
 
     def updateLevel(self, level) -> None:
         self.updateText(LEVELTXT, str(level + 1).zfill(3))
+
+    def updateHighScore(self, high_score: int) -> None:
+        """Updates the displayed high score."""
+        self.updateText(HISCOREVALUETXT, str(high_score).zfill(8))
 
     def updateText(self, id, value) -> None:
         if id in self.alltext:

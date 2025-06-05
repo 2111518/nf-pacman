@@ -45,6 +45,38 @@ class GameController:
         self.extra_life_awarded: bool = False
         self.default_background_music: str = "pacman_beginning" # 設定預設背景音樂
 
+        self.high_score: int = 0
+        self.high_score_filepath: str = "highscore.txt"
+        self.load_high_score() # 載入最高分
+
+        self.textgroup.updateHighScore(self.high_score) # 更新顯示的最高分
+
+    def load_high_score(self) -> None:
+        """Loads the high score from the highscore.txt file."""
+        try:
+            with open(self.high_score_filepath, "r") as f:
+                score_str = f.read().strip()
+                if score_str.isdigit():
+                    self.high_score = int(score_str)
+                else:
+                    print(f"Warning: Invalid content in {self.high_score_filepath}. Starting high score at 0.")
+                    self.high_score = 0 # Reset if content is not a digit
+        except FileNotFoundError:
+            print(f"Info: {self.high_score_filepath} not found. Starting high score at 0.")
+            self.high_score = 0 # File not found, start at 0
+        except Exception as e:
+            print(f"Error loading high score from {self.high_score_filepath}: {e}. Starting high score at 0.")
+            self.high_score = 0 # Other errors, start at 0
+
+    def save_high_score(self) -> None:
+        """Saves the current high score to the highscore.txt file."""
+        try:
+            with open(self.high_score_filepath, "w") as f:
+                f.write(str(self.high_score))
+            print(f"High score ({self.high_score}) saved to {self.high_score_filepath}")
+        except Exception as e:
+            print(f"Error saving high score to {self.high_score_filepath}: {e}")
+
     def character_select(self) -> int:
         """顯示角色選擇畫面，回傳選擇的角色編號"""
         font_en = pygame.font.Font("PressStart2P-Regular.ttf", 16)  # 英文名稱字型（小一點）
@@ -89,7 +121,8 @@ class GameController:
             pygame.display.update()
             for event in pygame.event.get():
                 if event.type == QUIT:
-                    pygame.quit()
+                    self.save_high_score() # 遊戲退出前儲存最高分
+                    pygame.quit() # Pygame quit should be called before sys.exit for proper cleanup
                     sys.exit()
                 elif event.type == KEYDOWN:
                     if event.key == K_LEFT:
@@ -214,6 +247,8 @@ class GameController:
     def checkEvents(self) -> None:
         for event in pygame.event.get():
             if event.type == QUIT:
+                self.save_high_score() # 遊戲退出前儲存最高分
+                pygame.quit() # Pygame quit should be called before sys.exit for proper cleanup
                 sys.exit()
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 if self.pacman.alive:
@@ -293,6 +328,7 @@ class GameController:
             if pellet.name == POWERPELLET and pellet in self.pellets.powerpellets:
                  self.pellets.powerpellets.remove(pellet) # Ensure the main power pellet is removed if it was one
             if self.pellets.isEmpty():
+                self.sound_controller.play_sound("pacman_extrapac") # 立即播放通關音效
                 self.flashBG = True
                 self.hideEntities()
                 self.pause.setPause(pauseTime=3, func=self.nextLevel)
@@ -344,6 +380,7 @@ class GameController:
                         self.ghosts.hide()
                         if self.lives <= 0:
                             self.textgroup.showText(GAMEOVERTXT)
+                            self.save_high_score() # 遊戲結束時儲存最高分
                             # 遊戲結束，準備重新開始，此時應已停止背景音樂
                             self.pause.setPause(pauseTime=3, func=self.restartGame)
                         else:
@@ -378,7 +415,7 @@ class GameController:
         self.ghosts.hide()
 
     def nextLevel(self) -> None:
-        self.sound_controller.play_sound("intermission") # 播放過關音效 (一次性)
+        self.sound_controller.play_sound("pacman_intermission") # 播放調整後的過關音效 (一次性)
         self.sound_controller.stop_music() # 停止舊的背景音樂，讓 manage_background_sounds 在下一關開始時選擇新的
         self.showEntities()
         self.level += 1
@@ -388,6 +425,8 @@ class GameController:
 
     def restartGame(self) -> None:
         # game_start 音效會在 startGame() 中播放
+        # 在重新開始遊戲前，確保之前的分數（可能是新的最高分）已被保存
+        # self.save_high_score() # 移至 GAMEOVERTXT 處保存，避免每次 resetLevel 都保存
         self.lives = 5
         self.level = 0
         self.pause.paused = True
@@ -414,6 +453,11 @@ class GameController:
     def updateScore(self, points) -> None:
         self.score += points
         self.textgroup.updateScore(self.score)
+        if self.score > self.high_score:
+            self.high_score = self.score
+            self.textgroup.updateHighScore(self.high_score)
+            # 不需要在此處立即 save_high_score()，等到遊戲結束或退出時再統一儲存
+
         # 檢查是否達到獲得額外生命的分數門檻
         if not self.extra_life_awarded and self.score >= self.extra_life_score_threshold:
             self.lives += 1
