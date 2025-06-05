@@ -11,9 +11,9 @@ from nodes import NodeGroup
 from pacman import Pacman, PacmanGun, PacmanShield
 from pauser import Pause
 from pellets import PelletGroup
+from sound import SoundController
 from sprites import LifeSprites, MazeSprites
 from text import TextGroup
-from sound import SoundController
 
 
 class GameController:
@@ -81,7 +81,7 @@ class GameController:
     def load_high_score(self) -> None:
         """Loads the high score from the highscore.txt file."""
         try:
-            with open(self.high_score_filepath, "r") as f:
+            with open(self.high_score_filepath) as f:
                 score_str = f.read().strip()
                 if score_str.isdigit():
                     self.high_score = int(score_str)
