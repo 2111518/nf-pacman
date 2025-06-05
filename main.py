@@ -251,7 +251,7 @@ class GameController:
         elif self.game_state == GameController.CHARACTER_SELECTING:
             # This state is now triggered from START_MENU (K_SPACE) or PLAYING (K_q)
             # Call character_select and handle its outcome directly here.
-            selection_result = self.character_select() 
+            selection_result = self.character_select()
 
             if selection_result == GameController.BACK_FROM_CHAR_SELECT:
                 self.game_state = GameController.START_MENU
@@ -261,9 +261,9 @@ class GameController:
                 self.sound_controller.stop_music() # Ensure character select music is stopped
                 self.game_state = GameController.PLAYING
                 self.pause.setPause(should_be_paused=True, pauseTime=None) # Set to be paused for "Ready!"
-                self.startGame() 
+                self.startGame()
                 self.textgroup.updateLevel(self.level)
-                self.textgroup.showText(READYTXT) 
+                self.textgroup.showText(READYTXT)
 
         elif self.game_state == GameController.PLAYING:
             self.textgroup.update(dt) # Keep text updates if they are general (like score)
@@ -293,7 +293,7 @@ class GameController:
                         self.background = self.background_flash
                     else:
                         self.background = self.background_norm
-            
+
             # Specific PLAYING state events (like pausing the game)
             self.check_playing_events(events) # Pass events
 
@@ -309,17 +309,17 @@ class GameController:
 
     def update_start_menu(self, events: list[pygame.event.Event]) -> None:
         """Handles logic for the start menu state."""
-        for event in events: 
+        for event in events:
             if event.type == QUIT:
                 self.quit_game()
             elif event.type == KEYDOWN:
                 if event.key == K_SPACE:
-                    self.sound_controller.play_sound("credit") 
+                    self.sound_controller.play_sound("credit")
                     self.game_state = GameController.CHARACTER_SELECTING
                     # No longer call character_select directly here, update() will handle it.
                     # self.sound_controller.stop_music() # Music stop handled when CHARACTER_SELECTING starts or ends
                     return # Exit event loop for start menu, next update cycle will handle CHARACTER_SELECTING
-                elif event.key == K_q and self.game_state == GameController.START_MENU: 
+                if event.key == K_q and self.game_state == GameController.START_MENU:
                     self.quit_game()
 
     def check_general_events(self, events: list[pygame.event.Event]) -> None:
@@ -335,32 +335,32 @@ class GameController:
                 self.quit_game()
             elif event.type == KEYDOWN:
                 if event.key == K_SPACE:
-                    ready_text_obj = self.textgroup.alltext.get(READYTXT) 
+                    ready_text_obj = self.textgroup.alltext.get(READYTXT)
                     if self.pause.paused and ready_text_obj and ready_text_obj.visible:
                         self.pause.setPause(should_be_paused=False)  # Unpause to start the game
-                        if ready_text_obj: 
-                            ready_text_obj.visible = False     
+                        if ready_text_obj:
+                            ready_text_obj.visible = False
                     elif self.pacman.alive:
                         current_pause_state = self.pause.paused
-                        self.pause.setPause(should_be_paused=not current_pause_state) 
-                        if self.pause.paused: 
+                        self.pause.setPause(should_be_paused=not current_pause_state)
+                        if self.pause.paused:
                             self.textgroup.showText(PAUSETXT)
-                        else: 
+                        else:
                             pause_text_obj = self.textgroup.alltext.get(PAUSETXT)
                             if pause_text_obj:
                                 pause_text_obj.visible = False
-                            self.showEntities() 
+                            self.showEntities()
 
                 elif event.key == K_q: # Back to character selection from playing state
-                    self.sound_controller.play_sound("munch_1") 
-                    self.sound_controller.stop_music() 
-                    self.textgroup.hideText() 
-                    if self.pause.paused: 
+                    self.sound_controller.play_sound("munch_1")
+                    self.sound_controller.stop_music()
+                    self.textgroup.hideText()
+                    if self.pause.paused:
                         self.pause.setPause(should_be_paused=False) # Explicitly unpause before leaving screen
-                        self.showEntities() 
-                    
+                        self.showEntities()
+
                     self.game_state = GameController.CHARACTER_SELECTING
-                    return 
+                    return
 
                 #技能啟動與射擊
                 elif hasattr(self.pacman, "ability"):

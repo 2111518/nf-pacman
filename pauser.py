@@ -1,13 +1,14 @@
-from typing import Optional, Callable
+from collections.abc import Callable
+
 
 class Pause:
     def __init__(self, paused: bool = False) -> None:
         self.paused: bool = paused
         self.timer: float = 0.0
-        self.pauseTime: Optional[float] = None
-        self.func: Optional[Callable] = None
+        self.pauseTime: float | None = None
+        self.func: Callable | None = None
 
-    def update(self, dt: float) -> Optional[Callable]:
+    def update(self, dt: float) -> Callable | None:
         if self.paused and self.pauseTime is not None: # Only decrement timer if it's a timed pause and actually paused
             self.timer += dt
             if self.timer >= self.pauseTime:
@@ -19,7 +20,7 @@ class Pause:
                 return expired_func
         return None
 
-    def setPause(self, should_be_paused: bool, pauseTime: Optional[float] = None, func: Optional[Callable] = None) -> None:
+    def setPause(self, should_be_paused: bool, pauseTime: float | None = None, func: Callable | None = None) -> None:
         self.paused = should_be_paused
         self.timer = 0.0 # Reset timer whenever pause state is explicitly set
         self.func = func

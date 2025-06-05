@@ -1,5 +1,4 @@
 import os
-from typing import Optional, Callable # Ensure these are imported if not already
 
 import pygame
 
@@ -20,7 +19,7 @@ class SoundController:
         self.music_dir: str = music_dir
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         self.load_sounds()
-        self.current_background_music_name: Optional[str] = None # Adjusted type hint
+        self.current_background_music_name: str | None = None # Adjusted type hint
 
     def load_sounds(self) -> None:
         """Loads all .wav sound files from the music directory."""
@@ -39,7 +38,7 @@ class SoundController:
         # print(f"Loaded {len(self.sounds)} sounds from '{self.music_dir}'.") # Optionally keep or remove
 
 
-    def play_sound(self, name: str, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> Optional[pygame.mixer.Channel]:
+    def play_sound(self, name: str, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> pygame.mixer.Channel | None:
         """Plays a loaded sound.
 
         Args:
@@ -55,7 +54,7 @@ class SoundController:
         if name in self.sounds:
             sound: pygame.mixer.Sound = self.sounds[name]
             try:
-                channel: Optional[pygame.mixer.Channel] = sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
+                channel: pygame.mixer.Channel | None = sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
                 return channel
             except pygame.error: # Removed 'as e' and the print statement
                 return None
