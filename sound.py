@@ -1,24 +1,25 @@
-import pygame
 import os
-from typing import Dict, Optional
+
+import pygame
+
 
 class SoundController:
     """Manages loading and playing sound effects and music."""
 
     def __init__(self, music_dir: str = "Music") -> None:
-        """
-        Initializes the SoundController and loads all sounds.
+        """Initializes the SoundController and loads all sounds.
 
         Args:
             music_dir: The directory where sound files are located.
+
         """
         if not pygame.mixer.get_init():
             pygame.mixer.init() # Ensure mixer is initialized
 
         self.music_dir: str = music_dir
-        self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
         self.load_sounds()
-        self.current_background_music_name: Optional[str] = None
+        self.current_background_music_name: str | None = None
 
     def load_sounds(self) -> None:
         """Loads all .wav sound files from the music directory."""
@@ -37,9 +38,8 @@ class SoundController:
         print(f"Loaded {len(self.sounds)} sounds from '{self.music_dir}'.")
 
 
-    def play_sound(self, name: str, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> Optional[pygame.mixer.Channel]:
-        """
-        Plays a loaded sound.
+    def play_sound(self, name: str, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> pygame.mixer.Channel | None:
+        """Plays a loaded sound.
 
         Args:
             name: The name of the sound to play (without .wav extension).
@@ -49,11 +49,12 @@ class SoundController:
 
         Returns:
             The Channel object if the sound was played, None otherwise.
+
         """
         if name in self.sounds:
             sound: pygame.mixer.Sound = self.sounds[name]
             try:
-                channel: Optional[pygame.mixer.Channel] = sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
+                channel: pygame.mixer.Channel | None = sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
                 return channel
             except pygame.error as e:
                 print(f"Error playing sound '{name}': {e}")
@@ -63,14 +64,14 @@ class SoundController:
             return None
 
     def play_background_music(self, name: str, loops: int = -1, start_time: float = 0.0, fade_ms: int = 0) -> None:
-        """
-        Plays a sound as background music. Stops any currently playing music.
+        """Plays a sound as background music. Stops any currently playing music.
 
         Args:
             name: The name of the sound file to play (without .wav extension).
             loops: Number of times to repeat the music. -1 means loop indefinitely.
             start_time: The position in seconds to start playing from.
             fade_ms: Fade-in time in milliseconds.
+
         """
         if name == self.current_background_music_name and pygame.mixer.music.get_busy():
             return
@@ -97,11 +98,11 @@ class SoundController:
             print(f"Error stopping music: {e}")
 
     def fadeout_music(self, time: int) -> None:
-        """
-        Fades out the currently playing background music.
+        """Fades out the currently playing background music.
 
         Args:
             time: Time in milliseconds for the music to fade out.
+
         """
         try:
             pygame.mixer.music.fadeout(time)
@@ -109,7 +110,7 @@ class SoundController:
         except pygame.error as e:
             print(f"Error fading out music: {e}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example Usage (requires a Pygame display to be initialized for sound to work properly on some systems)
     pygame.init()
     screen = pygame.display.set_mode((200, 200)) # Dummy screen
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     channels = 1 # mono
 
     # Check if any .wav files exist in Music directory
-    has_wav_files = any(f.endswith('.wav') for f in os.listdir("Music"))
+    has_wav_files = any(f.endswith(".wav") for f in os.listdir("Music"))
 
     if not has_wav_files:
         print("No .wav files found in Music directory. Attempting to create a dummy 'test_sound.wav'.")
@@ -146,7 +147,7 @@ if __name__ == '__main__':
             for i in range(n_samples):
                 angle = 2 * math.pi * freq * i / sample_rate
                 sample_value = int(max_amplitude * math.sin(angle))
-                wav_file.writeframesraw(sample_value.to_bytes(bits // 8, byteorder='little', signed=True))
+                wav_file.writeframesraw(sample_value.to_bytes(bits // 8, byteorder="little", signed=True))
             wav_file.close()
             print("Dummy 'test_sound.wav' created.")
         except Exception as e:
@@ -194,4 +195,4 @@ if __name__ == '__main__':
                 running = False
         pygame.display.flip()
 
-    pygame.quit() 
+    pygame.quit()
