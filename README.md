@@ -7,3 +7,6 @@
 ### Dependent
 - pygame
 - numpy
+
+### License
+AGPL v3
