@@ -35,6 +35,8 @@ class NodeGroup:
     def __init__(self, level) -> None:
         self.level = level
         self.nodesLUT = {}
+        #self.nodeSymbols = ["+", "P", "n"]
+        #修改地方
         self.nodeSymbols = ["+", "P", "n", "T", "t", "I", "i", "S", "s", "M", "m"]        
         self.pathSymbols = [".", "-", "|", "p"]
         data = self.readMazeFile(level)
@@ -164,3 +166,14 @@ class NodeGroup:
     def render(self, screen) -> None:
         for node in self.nodesLUT.values():
             node.render(screen)
+
+    def getHomeNodes(self) -> list:
+        """
+        Return all home node (x, y) pixel coordinates for exclusion in teleport.
+        """
+        if self.homekey is None:
+            return []
+        # homekey is the center top of the home area, home is 5x5 grid
+        x0, y0 = self.homekey
+        offsets = [(dx * TILEWIDTH, dy * TILEHEIGHT) for dx in range(-2, 3) for dy in range(0, 5)]
+        return [(x0 + dx, y0 + dy) for dx, dy in offsets if (x0 + dx, y0 + dy) in self.nodesLUT]
