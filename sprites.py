@@ -168,3 +168,43 @@ class MazeSprites(Spritesheet):
 
     def rotate(self, sprite, value):
         return pygame.transform.rotate(sprite, value*90)
+
+
+class PacmanGunSprites:
+    """Sprites handler for Pacman Gun character (single static image)."""
+    def __init__(self, entity) -> None:
+        self.entity = entity
+        self.sheet = pygame.image.load("pacman_gun.png").convert_alpha()
+        self.sheet.set_colorkey((255, 255, 255))        # 若圖片是白底，設為透明
+        # 縮放到與原本角色一致
+        self.sheet = pygame.transform.scale(self.sheet, (2*TILEWIDTH, 2*TILEHEIGHT))
+        self.entity.image = self.getStartImage()
+
+    def update(self, dt) -> None:
+        # 單一靜態圖，不需動畫
+        self.entity.image = self.getStartImage()
+
+    def reset(self) -> None:
+        pass
+
+    def getStartImage(self):
+        return self.sheet
+
+
+class PacmanShieldSprites:
+    """Sprites handler for Pacman Shield character (single static image)."""
+    def __init__(self, entity) -> None:
+        self.entity = entity
+        self.sheet = pygame.image.load("pacman_shield.png").convert_alpha()
+        self.sheet.set_colorkey((255, 255, 255))  # 若圖片是白底，設為透明
+        self.sheet = pygame.transform.scale(self.sheet, (2*TILEWIDTH, 2*TILEHEIGHT))
+        self.entity.image = self.getStartImage()
+
+    def update(self, dt) -> None:
+        self.entity.image = self.getStartImage()
+
+    def reset(self) -> None:
+        pass
+
+    def getStartImage(self):
+        return self.sheet
