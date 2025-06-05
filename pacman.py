@@ -1,15 +1,16 @@
 import random
+import time
+
 import pygame
 from pygame.locals import *
 
+from bullet import Bullet
 from constants import *
 from entity import Entity
-from sprites import PacmanSprites, PacmanGunSprites, PacmanShieldSprites
-#修改地方
-from nodes import NodeGroup # For type hinting
 
-import time
-from bullet import Bullet
+#修改地方
+from nodes import NodeGroup  # For type hinting
+from sprites import PacmanGunSprites, PacmanShieldSprites, PacmanSprites
 
 
 class Pacman(Entity):
@@ -94,12 +95,10 @@ class Pacman(Entity):
                 self.invisibility_timer = 0.0
                 if self.image: # Ensure image is not None
                     self.image.set_alpha(self.default_alpha)
-            else:
-                if self.image: # Ensure image is not None
-                    self.image.set_alpha(self.invisible_alpha)
-        else: # Ensure alpha is reset if not invisible (e.g. after freight mode, etc.)
-            if self.image and self.image.get_alpha() != self.default_alpha:
-                 self.image.set_alpha(self.default_alpha)
+            elif self.image: # Ensure image is not None
+                self.image.set_alpha(self.invisible_alpha)
+        elif self.image and self.image.get_alpha() != self.default_alpha:
+             self.image.set_alpha(self.default_alpha)
         # Speed boost logic
         if self.is_boosted:
             self.speed_boost_timer -= dt
@@ -140,9 +139,7 @@ class Pacman(Entity):
         return dSquared <= rSquared
     #修改地方
     def teleport(self, node_group: NodeGroup) -> None:
-        """
-        Teleports Pacman to a random valid node on the map, excluding ghost home nodes.
-        """
+        """Teleports Pacman to a random valid node on the map, excluding ghost home nodes."""
         if node_group and node_group.nodesLUT:
             # Exclude home nodes
             home_nodes = set(node_group.getHomeNodes())
@@ -152,7 +149,6 @@ class Pacman(Entity):
                 self.node = new_node
                 self.target = new_node
                 self.setPosition()
-                print(f"Pacman teleported to node at {new_node.position}") # For debugging
 
     def activate_invisibility(self, duration: float) -> None:
         """Activates Pacman's invisibility for a given duration."""
@@ -161,7 +157,6 @@ class Pacman(Entity):
         self.invisibility_duration = duration # Store it if needed elsewhere
         if self.image: # Ensure image is not None
             self.image.set_alpha(self.invisible_alpha)
-        print(f"Pacman invisible for {duration} seconds.") # For debugging
 
     def activate_speed_boost(self, factor: float, duration: float) -> None:
         """Activates Pacman's speed boost for a given duration."""
@@ -169,7 +164,6 @@ class Pacman(Entity):
         self.is_boosted = True
         self.speed_boost_timer = duration
         self.speed = self.base_speed_value * factor # Boost from the base speed
-        print(f"Pacman speed boosted to {self.speed} (factor {factor} on base {self.base_speed_value}) for {duration}s.")
 
 
 class PacmanGun(Pacman):
@@ -191,7 +185,8 @@ class PacmanGun(Pacman):
 
 #射擊子彈技能
 class GunAbility:
-    """管理槍技能的啟動、冷卻、子彈發射與顯示。"""
+    """管理槍技能的啟動、冷卻、子彈發射與顯示。."""
+
     def __init__(self, pacman) -> None:
         self.pacman = pacman
         self.state = "ready"  # ready, active, cooldown
@@ -266,7 +261,8 @@ class PacmanShield(Pacman):
         self.ability.render(screen)
 
 class ShieldAbility:
-    """管理盾牌技能的啟動、冷卻、圖片切換、鬼魂碰撞等。"""
+    """管理盾牌技能的啟動、冷卻、圖片切換、鬼魂碰撞等。."""
+
     def __init__(self, pacman) -> None:
         self.pacman = pacman
         self.state = "ready"  # ready, active, cooldown

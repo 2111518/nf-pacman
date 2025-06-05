@@ -172,6 +172,7 @@ class MazeSprites(Spritesheet):
 
 class PacmanGunSprites:
     """Sprites handler for Pacman Gun character (single static image)."""
+
     def __init__(self, entity) -> None:
         self.entity = entity
         self.sheet = pygame.image.load("pacman_gun.png").convert_alpha()
@@ -193,6 +194,7 @@ class PacmanGunSprites:
 
 class PacmanShieldSprites:
     """Sprites handler for Pacman Shield character (single static image)."""
+
     def __init__(self, entity) -> None:
         self.entity = entity
         self.sheet = pygame.image.load("pacman_shield.png").convert_alpha()

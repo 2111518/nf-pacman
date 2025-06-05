@@ -39,13 +39,13 @@ class GameController:
         self.selected_character = self.character_select()
 
     def character_select(self) -> int:
-        """顯示角色選擇畫面，回傳選擇的角色編號。"""
+        """顯示角色選擇畫面，回傳選擇的角色編號。."""
         font_en = pygame.font.Font("PressStart2P-Regular.ttf", 16)  # 英文名稱字型（小一點）
         #font_zh = pygame.font.SysFont("Microsoft JhengHei", 20)  # 中文描述字型
         options = [
             {"name": "CLASSIC", "img": pygame.image.load("spritesheet_mspacman.png").convert(), "desc": "經典吃豆人"},
             {"name": "GUNNER", "img": pygame.image.load("pacman_gun.png").convert_alpha(), "desc": "Gun Pacman"},
-            {"name": "SHIELD", "img": pygame.image.load("pacman_shield.png").convert_alpha(), "desc": "Shield Pacman"}
+            {"name": "SHIELD", "img": pygame.image.load("pacman_shield.png").convert_alpha(), "desc": "Shield Pacman"},
         ]
         # 縮放角色圖示
         options[0]["img"] = pygame.transform.scale(options[0]["img"].subsurface(pygame.Rect(8*TILEWIDTH, 0, 2*TILEWIDTH, 2*TILEHEIGHT)), (64, 64))
@@ -81,7 +81,7 @@ class GameController:
                         selected = (selected - 1) % len(options)
                     elif event.key == K_RIGHT:
                         selected = (selected + 1) % len(options)
-                    elif event.key == K_RETURN or event.key == K_KP_ENTER:
+                    elif event.key in (K_RETURN, K_KP_ENTER):
                         return selected
             clock.tick(30)
 
@@ -212,18 +212,18 @@ class GameController:
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
         if pellet:
             self.pellets.numEaten += 1
-            self.updateScore(pellet.points) 
+            self.updateScore(pellet.points)
 
             if pellet.name == TELEPORTPELLET:
                 self.pacman.teleport(self.nodes)
             elif pellet.name == POWERPELLET:
                 self.ghosts.startFreight()
             elif pellet.name == INVISIBILITYPELLET:
-                invisibility_duration = 5.0 
+                invisibility_duration = 5.0
                 self.pacman.activate_invisibility(invisibility_duration)
             elif pellet.name == SPEEDBOOSTPELLET:
-                boost_factor = 1.5  
-                boost_duration = 8.0  
+                boost_factor = 1.5
+                boost_duration = 8.0
                 self.pacman.activate_speed_boost(boost_factor, boost_duration)
             elif pellet.name == SCOREMAGNETPELLET:
                 magnet_radius_squared = (TILEWIDTH * 4)**2 # Radius of 4 tiles
@@ -235,7 +235,7 @@ class GameController:
                         continue
 
                     # Absorb only normal pellets and power pellets
-                    if other_pellet.name == PELLET or other_pellet.name == POWERPELLET:
+                    if other_pellet.name in (PELLET, POWERPELLET):
                         if other_pellet.visible: # Check if it's an active pellet
                             dist_sq = (self.pacman.position - other_pellet.position).magnitudeSquared()
                             if dist_sq <= magnet_radius_squared:
