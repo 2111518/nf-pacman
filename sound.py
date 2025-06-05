@@ -33,8 +33,8 @@ class SoundController:
                 try:
                     self.sounds[name] = pygame.mixer.Sound(filepath)
                 except pygame.error as e:
-                    print(f"Error loading sound '{filepath}': {e}")
-        print(f"Loaded {len(self.sounds)} sounds from '{self.music_dir}'.")
+                    print(f"")
+        #print(f"Loaded {len(self.sounds)} sounds from '{self.music_dir}'.")
 
 
     def play_sound(self, name: str, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> Optional[pygame.mixer.Channel]:

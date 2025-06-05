@@ -17,6 +17,14 @@ from sound import SoundController
 
 
 class GameController:
+    # Define game states
+    START_MENU = "START_MENU"
+    CHARACTER_SELECTING = "CHARACTER_SELECTING" # State while character_select() is active
+    PLAYING = "PLAYING"
+    PAUSED = "PAUSED" # If you want a dedicated pause state distinct from Pause object
+    GAME_OVER = "GAME_OVER" # If you plan for a game over screen
+    BACK_FROM_CHAR_SELECT = -99 # Special value for returning from character select
+
     def __init__(self) -> None:
         pygame.init()
         pygame.mixer.init()
@@ -27,7 +35,6 @@ class GameController:
         self.background_flash = None
         self.clock = pygame.time.Clock()
         self.fruit = None
-        self.pause = Pause(True)
         self.level = 0
         self.lives = 5
         self.score = 0
@@ -40,7 +47,7 @@ class GameController:
         self.fruitNode = None
         self.mazedata = MazeData()
         self.sound_controller = SoundController()
-        self.selected_character = self.character_select()
+        self.selected_character = 0 # Default character, will be set by character_select
         self.extra_life_score_threshold: int = 10000
         self.extra_life_awarded: bool = False
         self.default_background_music: str = "pacman_beginning" # 設定預設背景音樂
@@ -48,8 +55,28 @@ class GameController:
         self.high_score: int = 0
         self.high_score_filepath: str = "highscore.txt"
         self.load_high_score() # 載入最高分
-
         self.textgroup.updateHighScore(self.high_score) # 更新顯示的最高分
+
+        # Start Menu Setup
+        self.game_state = GameController.START_MENU
+        try:
+            self.start_menu_image = pygame.image.load("start_menu.png").convert()
+            self.start_menu_image = pygame.transform.scale(self.start_menu_image, SCREENSIZE)
+        except pygame.error as e:
+            print(f"Error loading start_menu.png: {e}")
+            # Create a fallback surface if image loading fails
+            self.start_menu_image = pygame.Surface(SCREENSIZE)
+            self.start_menu_image.fill(BLACK)
+            font = pygame.font.Font("PressStart2P-Regular.ttf", 20)
+            text_surface = font.render("Start Menu Error", True, RED)
+            text_rect = text_surface.get_rect(center=(SCREENWIDTH // 2, SCREENHEIGHT // 2))
+            self.start_menu_image.blit(text_surface, text_rect)
+
+        # Initialize Pause object here, assuming it's needed for PLAYING state
+        self.pause = Pause(paused=True) # Start paused to show "Ready!" text initially
+
+        # Start background music for the start menu
+        self.sound_controller.play_background_music(self.default_background_music, loops=-1)
 
     def load_high_score(self) -> None:
         """Loads the high score from the highscore.txt file."""
@@ -135,6 +162,10 @@ class GameController:
                         self.sound_controller.play_sound("credit") # 確認選擇音效
                         self.sound_controller.stop_music() # 停止角色選擇背景音樂
                         return selected
+                    elif event.key == K_q: # Back to start menu
+                        self.sound_controller.play_sound("munch_1") # Optional: back sound
+                        self.sound_controller.stop_music() # Stop character selection music
+                        return GameController.BACK_FROM_CHAR_SELECT
             clock.tick(30)
 
     def setBackground(self) -> None:
@@ -210,62 +241,152 @@ class GameController:
 
 
     def update(self) -> None:
-        dt = self.clock.tick(30) / 1250.0
-        self.textgroup.update(dt)
-        self.pellets.update(dt)
-        if not self.pause.paused:
-            self.ghosts.update(dt)
-            if self.fruit is not None:
-                self.fruit.update(dt)
-            self.checkPelletEvents()
-            self.checkGhostEvents()
-            self.checkFruitEvents()
+        dt = self.clock.tick(30) / 1250.0 # Ensure dt is calculated regardless of state for clock.tick
+        events = pygame.event.get() # Get events once per frame
 
-        if self.pacman.alive:
+        self.check_general_events(events) # Pass events
+
+        if self.game_state == GameController.START_MENU:
+            self.update_start_menu(events) # Handles K_SPACE to go to CHARACTER_SELECTING
+        elif self.game_state == GameController.CHARACTER_SELECTING:
+            # This state is now triggered from START_MENU (K_SPACE) or PLAYING (K_q)
+            # Call character_select and handle its outcome directly here.
+            selection_result = self.character_select() 
+
+            if selection_result == GameController.BACK_FROM_CHAR_SELECT:
+                self.game_state = GameController.START_MENU
+                self.sound_controller.play_background_music(self.default_background_music, loops=-1)
+            else:
+                self.selected_character = selection_result
+                self.sound_controller.stop_music() # Ensure character select music is stopped
+                self.game_state = GameController.PLAYING
+                self.pause.setPause(should_be_paused=True, pauseTime=None) # Set to be paused for "Ready!"
+                self.startGame() 
+                self.textgroup.updateLevel(self.level)
+                self.textgroup.showText(READYTXT) 
+
+        elif self.game_state == GameController.PLAYING:
+            self.textgroup.update(dt) # Keep text updates if they are general (like score)
+            self.pellets.update(dt)
             if not self.pause.paused:
+                self.ghosts.update(dt)
+                if self.fruit is not None:
+                    self.fruit.update(dt)
+                self.checkPelletEvents()
+                self.checkGhostEvents()
+                self.checkFruitEvents()
+
+            if self.pacman.alive:
+                if not self.pause.paused:
+                    self.pacman.update(dt)
+            else:
+                # This handles pacman death animation
                 self.pacman.update(dt)
-        else:
-            self.pacman.update(dt)
 
-        self.manage_background_sounds() # 管理背景音效
+            self.manage_background_sounds() # Manage background sounds based on game situation
 
-        if self.flashBG:
-            self.flashTimer += dt
-            if self.flashTimer >= self.flashTime:
-                self.flashTimer = 0
-                if self.background == self.background_norm:
-                    self.background = self.background_flash
-                else:
-                    self.background = self.background_norm
-
-        afterPauseMethod = self.pause.update(dt)
-        if afterPauseMethod is not None:
-            afterPauseMethod()
-        self.checkEvents()
-        self.render()
-
-    def checkEvents(self) -> None:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                self.save_high_score() # 遊戲退出前儲存最高分
-                pygame.quit() # Pygame quit should be called before sys.exit for proper cleanup
-                sys.exit()
-            elif event.type == KEYDOWN and event.key == K_SPACE:
-                if self.pacman.alive:
-                    self.pause.setPause(playerPaused=True)
-                    if not self.pause.paused:
-                        self.textgroup.hideText()
-                        self.showEntities()
+            if self.flashBG:
+                self.flashTimer += dt
+                if self.flashTimer >= self.flashTime:
+                    self.flashTimer = 0
+                    if self.background == self.background_norm:
+                        self.background = self.background_flash
                     else:
-                        self.textgroup.showText(PAUSETXT)
-            # 技能啟動與射擊
-            elif event.type == KEYDOWN and hasattr(self.pacman, "ability"):
-                if event.key == pygame.K_j:
-                    # 只有有shoot方法的才呼叫shoot，否則只呼叫activate
-                    if hasattr(self.pacman.ability, "shoot") and self.pacman.ability.state == "active":
-                        self.pacman.ability.shoot()
-                    elif self.pacman.ability.state == "ready":
-                        self.pacman.ability.activate()
+                        self.background = self.background_norm
+            
+            # Specific PLAYING state events (like pausing the game)
+            self.check_playing_events(events) # Pass events
+
+            afterPauseMethod = self.pause.update(dt) # Pause object update
+            if afterPauseMethod is not None:
+                afterPauseMethod()
+        # Add other game states like GAME_OVER if needed
+        # elif self.game_state == GameController.GAME_OVER:
+        #     self.update_game_over()
+
+
+        self.render() # Call render at the end of update
+
+    def update_start_menu(self, events: list[pygame.event.Event]) -> None:
+        """Handles logic for the start menu state."""
+        for event in events: 
+            if event.type == QUIT:
+                self.quit_game()
+            elif event.type == KEYDOWN:
+                if event.key == K_SPACE:
+                    self.sound_controller.play_sound("credit") 
+                    self.game_state = GameController.CHARACTER_SELECTING
+                    # No longer call character_select directly here, update() will handle it.
+                    # self.sound_controller.stop_music() # Music stop handled when CHARACTER_SELECTING starts or ends
+                    return # Exit event loop for start menu, next update cycle will handle CHARACTER_SELECTING
+                elif event.key == K_q and self.game_state == GameController.START_MENU: 
+                    self.quit_game()
+
+    def check_general_events(self, events: list[pygame.event.Event]) -> None:
+        """Handles events that should be checked in all game states, like QUIT."""
+        for event in events: # Iterate over passed events
+            if event.type == QUIT:
+                self.quit_game()
+
+    def check_playing_events(self, events: list[pygame.event.Event]) -> None:
+        """Handles events specific to the PLAYING state, e.g., pausing."""
+        for event in events: # Iterate over passed events
+            if event.type == QUIT:
+                self.quit_game()
+            elif event.type == KEYDOWN:
+                if event.key == K_SPACE:
+                    ready_text_obj = self.textgroup.alltext.get(READYTXT) 
+                    if self.pause.paused and ready_text_obj and ready_text_obj.visible:
+                        self.pause.setPause(should_be_paused=False)  # Unpause to start the game
+                        if ready_text_obj: 
+                            ready_text_obj.visible = False     
+                    elif self.pacman.alive:
+                        current_pause_state = self.pause.paused
+                        self.pause.setPause(should_be_paused=not current_pause_state) 
+                        if self.pause.paused: 
+                            self.textgroup.showText(PAUSETXT)
+                        else: 
+                            pause_text_obj = self.textgroup.alltext.get(PAUSETXT)
+                            if pause_text_obj:
+                                pause_text_obj.visible = False
+                            self.showEntities() 
+
+                elif event.key == K_q: # Back to character selection from playing state
+                    self.sound_controller.play_sound("munch_1") 
+                    self.sound_controller.stop_music() 
+                    self.textgroup.hideText() 
+                    if self.pause.paused: 
+                        self.pause.setPause(should_be_paused=False) # Explicitly unpause before leaving screen
+                        self.showEntities() 
+                    
+                    self.game_state = GameController.CHARACTER_SELECTING
+                    return 
+
+                #技能啟動與射擊
+                elif hasattr(self.pacman, "ability"):
+                    if event.key == pygame.K_j:
+                        # 只有有shoot方法的才呼叫shoot，否則只呼叫activate
+                        if hasattr(self.pacman.ability, "shoot") and self.pacman.ability.state == "active":
+                            self.pacman.ability.shoot()
+                        elif self.pacman.ability.state == "ready":
+                            self.pacman.ability.activate()
+                    elif event.key == pygame.K_k and hasattr(self.pacman, "secondary_ability"):
+                         if self.pacman.secondary_ability.state == "ready":
+                            self.pacman.secondary_ability.activate()
+                         elif self.pacman.secondary_ability.state == "active" and hasattr(self.pacman.secondary_ability, "shoot"):
+                             self.pacman.secondary_ability.shoot()
+
+
+    def quit_game(self) -> None:
+        """Handles quitting the game cleanly."""
+        self.save_high_score()
+        pygame.quit()
+        sys.exit()
+
+    def checkEvents(self) -> None: # This method is now split into check_general_events and check_playing_events
+        pass # Keep the original checkEvents if it's called from somewhere else, or remove if fully replaced.
+             # For now, making it a no-op to avoid breaking calls if they exist.
+             # Better to refactor calls to use the new specific event handlers.
 
     def checkPelletEvents(self) -> None:
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
@@ -331,7 +452,7 @@ class GameController:
                 self.sound_controller.play_sound("pacman_extrapac") # 立即播放通關音效
                 self.flashBG = True
                 self.hideEntities()
-                self.pause.setPause(pauseTime=3, func=self.nextLevel)
+                self.pause.setPause(should_be_paused=True, pauseTime=3, func=self.nextLevel)
 
     def checkGhostEvents(self) -> None:
         for ghost in self.ghosts:
@@ -345,7 +466,7 @@ class GameController:
                         self.updateScore(ghost.points)
                         self.textgroup.addText(str(ghost.points), WHITE, ghost.position.x, ghost.position.y, 8, time=1)
                         self.ghosts.updatePoints()
-                        self.pause.setPause(pauseTime=1, func=self.showEntities)
+                        self.pause.setPause(should_be_paused=True, pauseTime=1, func=self.showEntities)
                         ghost.startSpawn()
                         self.nodes.allowHomeAccess(ghost)
                         bullet.active = False
@@ -356,7 +477,7 @@ class GameController:
                     self.updateScore(ghost.points)
                     self.textgroup.addText(str(ghost.points), WHITE, ghost.position.x, ghost.position.y, 8, time=1)
                     self.ghosts.updatePoints()
-                    self.pause.setPause(pauseTime=1, func=self.showEntities)
+                    self.pause.setPause(should_be_paused=True, pauseTime=1, func=self.showEntities)
                     continue  # 技能啟動時不再進行下方一般碰撞判斷
             # 一般Pacman碰撞（包含PacmanShield未開技能時）
             if self.pacman.collideGhost(ghost):
@@ -367,7 +488,7 @@ class GameController:
                     self.updateScore(ghost.points)
                     self.textgroup.addText(str(ghost.points), WHITE, ghost.position.x, ghost.position.y, 8, time=1)
                     self.ghosts.updatePoints()
-                    self.pause.setPause(pauseTime=1, func=self.showEntities)
+                    self.pause.setPause(should_be_paused=True, pauseTime=1, func=self.showEntities)
                     ghost.startSpawn()
                     self.nodes.allowHomeAccess(ghost)
                 elif ghost.mode.current is not SPAWN:
@@ -382,10 +503,10 @@ class GameController:
                             self.textgroup.showText(GAMEOVERTXT)
                             self.save_high_score() # 遊戲結束時儲存最高分
                             # 遊戲結束，準備重新開始，此時應已停止背景音樂
-                            self.pause.setPause(pauseTime=3, func=self.restartGame)
+                            self.pause.setPause(should_be_paused=True, pauseTime=3, func=self.restartGame)
                         else:
                             # 僅重置關卡，死亡音樂播放後，manage_background_sounds 會在下一幀處理警笛
-                            self.pause.setPause(pauseTime=3, func=self.resetLevel)
+                            self.pause.setPause(should_be_paused=True, pauseTime=3, func=self.resetLevel)
 
     def checkFruitEvents(self) -> None:
         if self.pellets.numEaten in {50, 140} and self.fruit is None:
@@ -468,33 +589,51 @@ class GameController:
             # 例如： self.extra_life_score_threshold += 10000 或設定多個門檻
 
     def render(self) -> None:
-        self.screen.blit(self.background, (0, 0))
-        #self.nodes.render(self.screen)
-        self.pellets.render(self.screen)
-        if self.fruit is not None:
-            self.fruit.render(self.screen)
-        self.pacman.render(self.screen)
-        self.ghosts.render(self.screen)
-        self.textgroup.render(self.screen)
+        if self.game_state == GameController.START_MENU:
+            self.render_start_menu()
+        elif self.game_state == GameController.CHARACTER_SELECTING:
+            # character_select() handles its own rendering loop, so screen is updated there.
+            # No explicit render call needed here for this state.
+            pass
+        elif self.game_state == GameController.PLAYING or self.game_state == GameController.PAUSED: # Assuming PAUSED might have similar render
+            self.screen.blit(self.background, (0, 0))
+            #self.nodes.render(self.screen)
+            self.pellets.render(self.screen)
+            if self.fruit is not None:
+                self.fruit.render(self.screen)
+            self.pacman.render(self.screen)
+            self.ghosts.render(self.screen)
+            self.textgroup.render(self.screen)
 
-        for i in range(len(self.lifesprites.images)):
-            x = self.lifesprites.images[i].get_width() * i
-            y = SCREENHEIGHT - self.lifesprites.images[i].get_height()
-            self.screen.blit(self.lifesprites.images[i], (x, y))
+            for i in range(len(self.lifesprites.images)):
+                x = self.lifesprites.images[i].get_width() * i
+                y = SCREENHEIGHT - self.lifesprites.images[i].get_height()
+                self.screen.blit(self.lifesprites.images[i], (x, y))
 
-        for i in range(len(self.fruitCaptured)):
-            x = SCREENWIDTH - self.fruitCaptured[i].get_width() * (i+1)
-            y = SCREENHEIGHT - self.fruitCaptured[i].get_height()
-            self.screen.blit(self.fruitCaptured[i], (x, y))
+            for i in range(len(self.fruitCaptured)):
+                x = SCREENWIDTH - self.fruitCaptured[i].get_width() * (i+1)
+                y = SCREENHEIGHT - self.fruitCaptured[i].get_height()
+                self.screen.blit(self.fruitCaptured[i], (x, y))
 
-        # 顯示技能圖示與倒數
-        if hasattr(self.pacman, "ability"):
-            self.pacman.ability.render(self.screen)
+            # 顯示技能圖示與倒數
+            if hasattr(self.pacman, "ability"):
+                self.pacman.ability.render(self.screen)
 
-        pygame.display.update()
+            pygame.display.update() # This should be the only display.update() call in the main loop ideally
+
+    def render_start_menu(self) -> None:
+        """Renders the start menu."""
+        self.screen.blit(self.start_menu_image, (0, 0))
+        # Optionally, add any text or animations to the start menu here
+        # Example: self.textgroup.render(self.screen) if you have start menu text
+        pygame.display.update() # Start menu has its own update for now
 
     def manage_background_sounds(self) -> None:
         """Manages playing continuous background sounds like retreating sounds or default background music."""
+        # Do not play sounds if in start menu or character selection, as they have their own music.
+        if self.game_state == GameController.START_MENU or self.game_state == GameController.CHARACTER_SELECTING:
+            return
+
         if not self.pacman.alive or self.pause.paused:
             # 如果Pacman死亡、遊戲暫停，或者在某些特殊過場（如果有的話），則可能停止背景音
             # 但Pacman死亡時，死亡音效播放後，若遊戲未結束（resetLevel），則背景音樂應恢復
@@ -516,7 +655,7 @@ class GameController:
 
 if __name__ == "__main__":
     game = GameController()
-    game.startGame()
+    # game.startGame() # startGame is now called after character selection
     while True:
         game.update()
 
