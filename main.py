@@ -21,6 +21,7 @@ class GameController:
         pygame.init()
         pygame.mixer.init()
         self.screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
+        self.font_credit = pygame.font.Font("PressStart2P-Regular.ttf", 10) # 初始化 credit 字型
         self.background = None
         self.background_norm = None
         self.background_flash = None
@@ -47,7 +48,11 @@ class GameController:
     def character_select(self) -> int:
         """顯示角色選擇畫面，回傳選擇的角色編號"""
         font_en = pygame.font.Font("PressStart2P-Regular.ttf", 16)  # 英文名稱字型（小一點）
+        # font_credit = pygame.font.Font("PressStart2P-Regular.ttf", 10) # Credit 文字字型 - 改為在 __init__ 中初始化
         #font_zh = pygame.font.SysFont("Microsoft JhengHei", 20)  # 中文描述字型
+
+        self.sound_controller.play_background_music("intermission", loops=-1) # 播放角色選擇背景音樂
+
         options = [
             {"name": "CLASSIC", "img": pygame.image.load("spritesheet_mspacman.png").convert(), "desc": "經典吃豆人"},
             {"name": "GUNNER", "img": pygame.image.load("pacman_gun.png").convert_alpha(), "desc": "Gun Pacman"},
@@ -77,6 +82,10 @@ class GameController:
                 # 角色描述（中文或英文）
                 #desc = font_zh.render(opt["desc"], True, (200, 200, 200))
                 #self.screen.blit(desc, (x-10, y+100))
+            # 在角色選擇畫面也顯示 credit
+            credit_text_surface = self.font_credit.render("by 404 not found", True, WHITE)
+            credit_text_rect = credit_text_surface.get_rect(center=(SCREENWIDTH // 2, SCREENHEIGHT - 20))
+            self.screen.blit(credit_text_surface, credit_text_rect)
             pygame.display.update()
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -85,9 +94,13 @@ class GameController:
                 elif event.type == KEYDOWN:
                     if event.key == K_LEFT:
                         selected = (selected - 1) % len(options)
+                        self.sound_controller.play_sound("munch_1") # 切換音效
                     elif event.key == K_RIGHT:
                         selected = (selected + 1) % len(options)
+                        self.sound_controller.play_sound("munch_1") # 切換音效
                     elif event.key in (K_RETURN, K_KP_ENTER):
+                        self.sound_controller.play_sound("credit") # 確認選擇音效
+                        self.sound_controller.stop_music() # 停止角色選擇背景音樂
                         return selected
             clock.tick(30)
 
