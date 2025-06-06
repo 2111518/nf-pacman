@@ -185,7 +185,7 @@ class PacmanGun(Pacman):
 
 #射擊子彈技能
 class GunAbility:
-    """管理槍技能的啟動、冷卻、子彈發射與顯示"""
+    """管理槍技能的啟動、冷卻、子彈發射與顯示."""
 
     def __init__(self, pacman) -> None:
         self.pacman = pacman
@@ -261,7 +261,7 @@ class PacmanShield(Pacman):
         self.ability.render(screen)
 
 class ShieldAbility:
-    """管理盾牌技能的啟動、冷卻、圖片切換、鬼魂碰撞等"""
+    """管理盾牌技能的啟動、冷卻、圖片切換、鬼魂碰撞等."""
 
     def __init__(self, pacman) -> None:
         self.pacman = pacman

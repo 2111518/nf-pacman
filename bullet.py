@@ -5,7 +5,7 @@ from vector import Vector2
 
 
 class Bullet:
-    """子彈物件，負責移動、繪製與碰撞"""
+    """子彈物件，負責移動、繪製與碰撞."""
 
     def __init__(self, position: Vector2, direction: int) -> None:
         self.position = position.copy()

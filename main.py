@@ -62,8 +62,7 @@ class GameController:
         try:
             self.start_menu_image = pygame.image.load("start_menu.png").convert()
             self.start_menu_image = pygame.transform.scale(self.start_menu_image, SCREENSIZE)
-        except pygame.error as e:
-            print(f"Error loading start_menu.png: {e}")
+        except pygame.error:
             # Create a fallback surface if image loading fails
             self.start_menu_image = pygame.Surface(SCREENSIZE)
             self.start_menu_image.fill(BLACK)
@@ -86,13 +85,10 @@ class GameController:
                 if score_str.isdigit():
                     self.high_score = int(score_str)
                 else:
-                    print(f"Warning: Invalid content in {self.high_score_filepath}. Starting high score at 0.")
                     self.high_score = 0 # Reset if content is not a digit
         except FileNotFoundError:
-            print(f"Info: {self.high_score_filepath} not found. Starting high score at 0.")
             self.high_score = 0 # File not found, start at 0
-        except Exception as e:
-            print(f"Error loading high score from {self.high_score_filepath}: {e}. Starting high score at 0.")
+        except Exception:
             self.high_score = 0 # Other errors, start at 0
 
     def save_high_score(self) -> None:
@@ -100,12 +96,11 @@ class GameController:
         try:
             with open(self.high_score_filepath, "w") as f:
                 f.write(str(self.high_score))
-            print(f"High score ({self.high_score}) saved to {self.high_score_filepath}")
-        except Exception as e:
-            print(f"Error saving high score to {self.high_score_filepath}: {e}")
+        except Exception:
+            pass
 
     def character_select(self) -> int:
-        """顯示角色選擇畫面，回傳選擇的角色編號"""
+        """顯示角色選擇畫面，回傳選擇的角色編號."""
         font_en = pygame.font.Font("PressStart2P-Regular.ttf", 16)  # 英文名稱字型（小一點）
         # font_credit = pygame.font.Font("PressStart2P-Regular.ttf", 10) # Credit 文字字型 - 改為在 __init__ 中初始化
         #font_zh = pygame.font.SysFont("Microsoft JhengHei", 20)  # 中文描述字型
@@ -595,7 +590,7 @@ class GameController:
             # character_select() handles its own rendering loop, so screen is updated there.
             # No explicit render call needed here for this state.
             pass
-        elif self.game_state == GameController.PLAYING or self.game_state == GameController.PAUSED: # Assuming PAUSED might have similar render
+        elif self.game_state in (GameController.PLAYING, GameController.PAUSED): # Assuming PAUSED might have similar render
             self.screen.blit(self.background, (0, 0))
             #self.nodes.render(self.screen)
             self.pellets.render(self.screen)
@@ -631,7 +626,7 @@ class GameController:
     def manage_background_sounds(self) -> None:
         """Manages playing continuous background sounds like retreating sounds or default background music."""
         # Do not play sounds if in start menu or character selection, as they have their own music.
-        if self.game_state == GameController.START_MENU or self.game_state == GameController.CHARACTER_SELECTING:
+        if self.game_state in (GameController.START_MENU, GameController.CHARACTER_SELECTING):
             return
 
         if not self.pacman.alive or self.pause.paused:
